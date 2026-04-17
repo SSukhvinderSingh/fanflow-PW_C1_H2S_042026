@@ -1,0 +1,14 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/forms";
+
+@theme {
+  --color-brand: #1d4ed8;
+  --color-brand-light: #dbeafe;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-gray-50);
+    color: var(--color-gray-900);
+  }
+}

@@ -1,0 +1,8 @@
+node_modules
+dist
+.git
+scripts/fanflow-live-firebase-adminsdk-fbsvc-fde06d13cb.json
+scripts/serviceAccountKey.json
+*.md
+craft/
+docs/

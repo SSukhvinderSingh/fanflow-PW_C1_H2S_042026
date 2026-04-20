@@ -26,18 +26,25 @@ const VenueMap = () => {
   const [mapInstance, setMapInstance] = useState(null);
 
   useEffect(() => {
-    // Listen to Firebase RTDB for real-time zone data
+    // Seed immediately with mock data so map always shows something
+    setZones(mockZones);
+
+    // Then listen to Firebase RTDB for real-time zone data
     const zoneRef = ref(db, "/zones");
-    const unsub = onValue(zoneRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        // Data format can be array or object map
-        setZones(Array.isArray(data) ? data : Object.values(data));
-      } else {
-        // Fallback to mock data if DB is empty
-        setZones(mockZones);
+    const unsub = onValue(
+      zoneRef,
+      (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          setZones(Array.isArray(data) ? data : Object.values(data));
+        }
+        // If null (empty), keep the mock data already set above
+      },
+      (error) => {
+        // Permission denied or network error — keep mock data
+        console.warn("RTDB read failed (using mock data):", error.code);
       }
-    });
+    );
 
     // Attempt to fetch device geolocation
     if (navigator.geolocation) {
@@ -96,7 +103,17 @@ const VenueMap = () => {
     }
   };
 
-  // Format data for HeatmapLayer
+  if (!isLoaded) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-full pt-32 text-gray-500 font-medium">
+          Loading Map...
+        </div>
+      </Layout>
+    );
+  }
+
+  // Format data for HeatmapLayer — only safe after Google Maps SDK is loaded
   const heatmapData = zones.map((zone) => ({
     location: new window.google.maps.LatLng(zone.lat, zone.lng),
     weight: zone.crowdLevel === "high" ? 3 : zone.crowdLevel === "medium" ? 2 : 1,
@@ -107,7 +124,7 @@ const VenueMap = () => {
     let color = "#10B981"; // Green (low)
     if (crowdLevel === "medium") color = "#F59E0B"; // Amber
     if (crowdLevel === "high") color = "#EF4444"; // Red
-    
+
     return {
       path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
       fillColor: color,
@@ -119,15 +136,6 @@ const VenueMap = () => {
     };
   };
 
-  if (!isLoaded) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center h-full pt-32 text-gray-500 font-medium">
-          Loading Map...
-        </div>
-      </Layout>
-    );
-  }
 
   return (
     <Layout>
@@ -135,7 +143,7 @@ const VenueMap = () => {
         <GoogleMap 
           mapContainerStyle={mapContainerStyle} 
           center={venueConfig.center} 
-          zoom={16} 
+          zoom={17} 
           options={{ disableDefaultUI: true }}
           onLoad={(map) => setMapInstance(map)}
         >

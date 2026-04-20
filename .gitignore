@@ -23,6 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 
+# Firebase Service Account Keys (never commit these)
+fanflow-live-firebase-adminsdk-fbsvc-fde06d13cb.json
+*firebase-adminsdk*.json
+scripts/serviceAccountKey.json
+
 # Environment Variables
 .env
 .env.*

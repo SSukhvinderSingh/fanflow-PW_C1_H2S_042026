@@ -1,11 +1,11 @@
 # Cloud Build pipeline for FanFlow
-# Triggered automatically on push to main branch via Cloud Run GitHub integration
-#
-# Substitution variables — set these in the Cloud Build trigger UI:
-#   _VITE_FIREBASE_API_KEY, _VITE_FIREBASE_AUTH_DOMAIN, etc.
+# Uses variables set in the Cloud Build trigger (Advanced > Substitution variables)
+# Auto-generated variables from Cloud Run: _AR_HOSTNAME, _AR_PROJECT_ID, _AR_REPOSITORY,
+#   _DEPLOY_REGION, _PLATFORM, _SERVICE_NAME
+# Custom variables you must add: _VITE_FIREBASE_API_KEY, _VITE_FIREBASE_AUTH_DOMAIN, etc.
 
 steps:
-  # Step 1: Build the Docker image with Firebase keys as build args
+  # Step 1: Build Docker image with Firebase keys injected as build args
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
@@ -28,17 +28,17 @@ steps:
       - '--build-arg'
       - 'VITE_GOOGLE_MAPS_API_KEY=$_VITE_GOOGLE_MAPS_API_KEY'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/fanflow:$COMMIT_SHA'
+      - '$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$_SERVICE_NAME:$COMMIT_SHA'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/fanflow:latest'
+      - '$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$_SERVICE_NAME:latest'
       - '.'
 
-  # Step 2: Push image to Google Container Registry
+  # Step 2: Push image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/fanflow:$COMMIT_SHA']
-
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/fanflow:latest']
+    args:
+      - 'push'
+      - '--all-tags'
+      - '$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$_SERVICE_NAME'
 
   # Step 3: Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -46,15 +46,15 @@ steps:
     args:
       - 'run'
       - 'deploy'
-      - 'fanflow'
+      - '$_SERVICE_NAME'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/fanflow:$COMMIT_SHA'
+      - '$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$_SERVICE_NAME:$COMMIT_SHA'
       - '--region'
-      - 'us-central1'
+      - '$_DEPLOY_REGION'
       - '--platform'
-      - 'managed'
+      - '$_PLATFORM'
       - '--allow-unauthenticated'
 
 images:
-  - 'gcr.io/$PROJECT_ID/fanflow:$COMMIT_SHA'
-  - 'gcr.io/$PROJECT_ID/fanflow:latest'
+  - '$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$_SERVICE_NAME:$COMMIT_SHA'
+  - '$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$_SERVICE_NAME:latest'

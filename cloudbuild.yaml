@@ -2,45 +2,43 @@
 # Uses variables set in the Cloud Build trigger (Advanced > Substitution variables)
 # Auto-generated variables from Cloud Run: _AR_HOSTNAME, _AR_PROJECT_ID, _AR_REPOSITORY,
 #   _DEPLOY_REGION, _PLATFORM, _SERVICE_NAME
-# Custom variables you must add: _VITE_FIREBASE_API_KEY, _VITE_FIREBASE_AUTH_DOMAIN, etc.
 
 steps:
-  # Step 1: Build Docker image with Firebase keys injected as build args
+  # Step 1: Generate .env.production file on the fly from substitution variables
+  # This is MORE ROBUST than Docker build-args for Vite applications
+  - name: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "VITE_FIREBASE_API_KEY=$_VITE_FIREBASE_API_KEY" > .env.production
+        echo "VITE_FIREBASE_AUTH_DOMAIN=$_VITE_FIREBASE_AUTH_DOMAIN" >> .env.production
+        echo "VITE_FIREBASE_DATABASE_URL=$_VITE_FIREBASE_DATABASE_URL" >> .env.production
+        echo "VITE_FIREBASE_PROJECT_ID=$_VITE_FIREBASE_PROJECT_ID" >> .env.production
+        echo "VITE_FIREBASE_STORAGE_BUCKET=$_VITE_FIREBASE_STORAGE_BUCKET" >> .env.production
+        echo "VITE_FIREBASE_MESSAGING_SENDER_ID=$_VITE_FIREBASE_MESSAGING_SENDER_ID" >> .env.production
+        echo "VITE_FIREBASE_APP_ID=$_VITE_FIREBASE_APP_ID" >> .env.production
+        echo "VITE_FIREBASE_MEASUREMENT_ID=$_VITE_FIREBASE_MEASUREMENT_ID" >> .env.production
+        echo "VITE_GOOGLE_MAPS_API_KEY=$_VITE_GOOGLE_MAPS_API_KEY" >> .env.production
+        echo "Generated .env.production for Vite build"
+
+  # Step 2: Build Docker image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
-      - '--build-arg'
-      - 'VITE_FIREBASE_API_KEY=$_VITE_FIREBASE_API_KEY'
-      - '--build-arg'
-      - 'VITE_FIREBASE_AUTH_DOMAIN=$_VITE_FIREBASE_AUTH_DOMAIN'
-      - '--build-arg'
-      - 'VITE_FIREBASE_DATABASE_URL=$_VITE_FIREBASE_DATABASE_URL'
-      - '--build-arg'
-      - 'VITE_FIREBASE_PROJECT_ID=$_VITE_FIREBASE_PROJECT_ID'
-      - '--build-arg'
-      - 'VITE_FIREBASE_STORAGE_BUCKET=$_VITE_FIREBASE_STORAGE_BUCKET'
-      - '--build-arg'
-      - 'VITE_FIREBASE_MESSAGING_SENDER_ID=$_VITE_FIREBASE_MESSAGING_SENDER_ID'
-      - '--build-arg'
-      - 'VITE_FIREBASE_APP_ID=$_VITE_FIREBASE_APP_ID'
-      - '--build-arg'
-      - 'VITE_FIREBASE_MEASUREMENT_ID=$_VITE_FIREBASE_MEASUREMENT_ID'
-      - '--build-arg'
-      - 'VITE_GOOGLE_MAPS_API_KEY=$_VITE_GOOGLE_MAPS_API_KEY'
       - '-t'
       - '$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$_SERVICE_NAME:$COMMIT_SHA'
       - '-t'
       - '$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$_SERVICE_NAME:latest'
       - '.'
 
-  # Step 2: Push image to Artifact Registry
+  # Step 3: Push image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
       - '--all-tags'
       - '$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$_SERVICE_NAME'
 
-  # Step 3: Deploy to Cloud Run
+  # Step 4: Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:

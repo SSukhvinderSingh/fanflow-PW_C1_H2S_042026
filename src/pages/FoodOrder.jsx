@@ -5,28 +5,8 @@ import { useAuth } from "../context/AuthContext";
 import { menuItems as mockMenu } from "../data/mockData";
 import { ShoppingCart, Plus, Minus, CreditCard, Clock, Utensils } from "lucide-react";
 import Layout from "../components/layout/Layout";
+import { cartReducer, generateSlots } from "../utils/foodUtils";
 
-// Cart Reducer
-const cartReducer = (state, action) => {
-  switch (action.type) {
-    case "ADD":
-      const existing = state.find(i => i.id === action.item.id);
-      if (existing) return state.map(i => i.id === action.item.id ? { ...i, qty: i.qty + 1 } : i);
-      return [...state, { ...action.item, qty: 1 }];
-    case "REMOVE":
-      return state.filter(i => i.id !== action.id);
-    case "DECREMENT":
-      const decItem = state.find(i => i.id === action.id);
-      if (decItem.qty > 1) {
-        return state.map(i => i.id === action.id ? { ...i, qty: i.qty - 1 } : i);
-      }
-      return state.filter(i => i.id !== action.id);
-    case "CLEAR":
-      return [];
-    default:
-      return state;
-  }
-};
 
 const FoodOrder = () => {
   const { user } = useAuth();
@@ -35,24 +15,6 @@ const FoodOrder = () => {
   const [view, setView] = useState("menu"); // menu, checkout, status
   const [pickupSlot, setPickupSlot] = useState("");
   const [placedOrder, setPlacedOrder] = useState(null);
-
-  // Generate 15-minute pickup slots ahead of current time
-  const generateSlots = () => {
-    const slots = [];
-    const now = new Date();
-    // Start options at least 15 min from now
-    now.setMinutes(now.getMinutes() + 15);
-    // Round up to nearest 15
-    const remainder = now.getMinutes() % 15;
-    now.setMinutes(now.getMinutes() + (15 - remainder));
-
-    for (let i = 0; i < 4; i++) {
-      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      slots.push(timeStr);
-      now.setMinutes(now.getMinutes() + 15);
-    }
-    return slots;
-  };
 
   const pickupSlots = generateSlots();
   const categories = ["Snacks", "Drinks", "Mains", "Desserts"];

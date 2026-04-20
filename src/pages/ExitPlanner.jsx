@@ -6,18 +6,11 @@ import { db } from "../firebase";
 import { gates as mockGates, venueConfig } from "../data/mockData";
 import { Navigation, Clock, CheckCircle } from "lucide-react";
 import Layout from "../components/layout/Layout";
+import { calculateStaggeredTime } from "../utils/exitUtils";
 
 const LIBRARIES = ["places"];
 const MODES = ["Walking", "Driving", "Transit", "Rideshare"];
 
-// Helper: Calculate staggered exit time
-const calculateStaggeredTime = (endTimeStr, waitMins) => {
-  const [h, m] = endTimeStr.split(":").map(Number);
-  const date = new Date();
-  date.setHours(h, m, 0);
-  date.setMinutes(date.getMinutes() - waitMins);
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-};
 
 const ExitPlanner = () => {
   const { isLoaded } = useMap();
